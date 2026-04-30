@@ -82,7 +82,7 @@ The actual tested setup for this project is Debian 13 on the V56 laptop.
 
 ```bash
 sudo apt update
-sudo apt install -y git cmake ninja-build build-essential python3 wget pkg-config libusb-1.0-0-dev gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib picotool
+sudo apt install -y git cmake ninja-build build-essential python3 wget pkg-config libusb-1.0-0-dev gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib picotool picocom
 ```
 
 Verify that `picotool` comes from the distribution package:
@@ -96,6 +96,19 @@ Expected path on a normal Debian package install:
 
 ```text
 /usr/bin/picotool
+```
+
+Verify that `picocom` is available for reading USB serial `printf()` output:
+
+```bash
+command -v picocom
+picocom --help | head
+```
+
+Expected path on a normal Debian package install:
+
+```text
+/usr/bin/picocom
 ```
 
 ### 2. Install the Raspberry Pi Pico SDK
@@ -203,7 +216,7 @@ The important output file is:
 build/pico_2w_clock.uf2
 ```
 
-### Flash with picotool
+### Flash with picotool and view printf output
 
 Put the Pico 2 W / Pico 2 WH into BOOTSEL mode, then run:
 
@@ -219,6 +232,34 @@ Family ID 'rp2350-arm-s' can be downloaded in absolute space:
 Loading into Flash:   [==============================]  100%
 
 The device was rebooted to start the application.
+```
+
+To view `printf()` output over USB serial after flashing, run:
+
+```bash
+picocom -b 115200 /dev/ttyACM0
+```
+
+Example combined flash + serial monitor command:
+
+```bash
+picotool load -fx build/pico_2w_clock.uf2 && sleep 2 && picocom -b 115200 /dev/ttyACM0
+```
+
+To exit `picocom`:
+
+```text
+Press Ctrl+A
+release both keys
+then press Ctrl+X
+```
+
+The current test firmware prints output like:
+
+```text
+pico_2w_clock starting
+display test: 12:34 dots=on
+display test: 12:34 dots=off
 ```
 
 ### Alternative flash method: copy UF2 manually
