@@ -270,29 +270,18 @@ The expected packaged path is:
 /usr/bin/picotool
 ```
 
-## Licensing note
+## License
 
-The original code in this project can be licensed under the GNU General Public License version 2.0.
+This project’s original source code is licensed under the GNU General Public License version 2.0 only (`GPL-2.0-only`).
 
-Recommended SPDX choices:
+The full GPLv2 license text is included in the repository as `LICENSE`.
 
-- `GPL-2.0-only` if the project should be strictly GPL version 2 only.
-- `GPL-2.0-or-later` if later GPL versions are also acceptable.
-
-Third-party libraries and submodules keep their own licenses. Do not relicense third-party code merely because it is present as a submodule.
+Third-party libraries and submodules retain their own upstream licenses. Do not relicense third-party code merely because it is present as a submodule.
 
 Current known dependency/license notes:
 
 - Raspberry Pi Pico SDK: BSD-3-Clause.
 - WIZnet ioLibrary_Driver: MIT.
 - Mbed TLS: generally dual Apache-2.0 OR GPL-2.0-or-later unless specific files say otherwise.
-- Apache-2.0-only code should not be combined into a GPLv2-only work without checking compatibility first.
 
-For this repository, a safe practical approach is:
-
-```text
-Project-original source files: GPL-2.0-only or GPL-2.0-or-later
-Third-party submodules: retain upstream licenses
-```
-
-Practical recommendation: use `GPL-2.0-or-later` unless there is a specific reason to forbid GPLv3 use. It keeps the project GPLv2-compatible while reducing future compatibility friction if more libraries are added later.
+Apache-2.0-only code should not be combined into this GPLv2-only project without checking compatibility first.
