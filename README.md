@@ -11,6 +11,7 @@ Current status:
 - Current firmware obtains SNTP time over Ethernet and applies a WIZnet SNTP timezone code selected at CMake configure time.
 - Before valid SNTP time is available, the display shows the fallback test pattern `12:34`.
 - After valid SNTP time is available, the display shows the current configured SNTP time as `HHMM`, with the decimal-point indicator blinking from the seconds value.
+- Build process now supports different SNTP timezone options via the CMake `LOCAL_TZ` setting.
 
 ## Hardware list
 
