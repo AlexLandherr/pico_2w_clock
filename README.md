@@ -7,8 +7,10 @@ Current status:
 - Builds with Pico SDK, CMake, and Ninja.
 - Flashes successfully with the Debian-packaged `picotool`.
 - Drives the Waveshare Pico-8SEG-LED display.
-- Current smoke-test firmware displays `12:34` and blinks the decimal-point indicator once per second.
-- Current smoke-test firmware also has basic Ethernet DHCP support and Ethernet MAC address setup working based on the Pico 2 W's unique board ID.
+- Current firmware initializes the WIZnet Ethernet HAT, obtains network settings via DHCP, and generates a stable local Ethernet MAC address from the Pico 2 W's unique board ID.
+- Current firmware obtains UTC time over Ethernet using SNTP.
+- Before valid SNTP time is available, the display shows the fallback test pattern `12:34`.
+- After valid SNTP time is available, the display shows the current UTC time as `HHMM`, with the decimal-point indicator blinking from the seconds value.
 
 ## Hardware list
 

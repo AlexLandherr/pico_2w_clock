@@ -59,6 +59,23 @@ target_link_libraries(wiznet_ethernet
         TIMER_FILES
 )
 
+add_library(wiznet_sntp
+    src/wiznet_sntp.c
+)
+
+target_include_directories(wiznet_sntp
+    PUBLIC
+        include
+)
+
+target_link_libraries(wiznet_sntp
+    PUBLIC
+        pico_stdlib
+        IOLIBRARY_FILES
+        SNTP_FILES
+        TIMER_FILES
+)
+
 add_executable(pico_2w_clock
     src/main.c
 )
@@ -68,6 +85,7 @@ target_link_libraries(pico_2w_clock
         pico_stdlib
         pico_8seg
         wiznet_ethernet
+        wiznet_sntp
 )
 
 pico_enable_stdio_usb(pico_2w_clock 1)
