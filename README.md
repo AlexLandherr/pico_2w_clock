@@ -8,7 +8,7 @@ Current status:
 - Flashes successfully with the Debian-packaged `picotool`.
 - Drives the Waveshare Pico-8SEG-LED display.
 - Current smoke-test firmware displays `12:34` and blinks the decimal-point indicator once per second.
-- Current smoke-test firmware also has basic Ethernet DHCP support and Ethernet MAC address setup working based on Pico 2 W's unique board ID.
+- Current smoke-test firmware also has basic Ethernet DHCP support and Ethernet MAC address setup working based on the Pico 2 W's unique board ID.
 
 ## Hardware list
 
