@@ -39,7 +39,7 @@ int main(void) {
 
                 pico_8seg_set_hhmm(network_time.hours, network_time.minutes, dots_on);
 
-                printf("display time: %02u:%02u:%02u UTC dots=%s ethernet=%s sntp=%s\n",
+                printf("display time: %02u:%02u:%02u dots=%s ethernet=%s sntp=%s\n",
                     network_time.hours,
                     network_time.minutes,
                     network_time.seconds,

@@ -8,9 +8,9 @@ Current status:
 - Flashes successfully with the Debian-packaged `picotool`.
 - Drives the Waveshare Pico-8SEG-LED display.
 - Current firmware initializes the WIZnet Ethernet HAT, obtains network settings via DHCP, and generates a stable local Ethernet MAC address from the Pico 2 W's unique board ID.
-- Current firmware obtains UTC time over Ethernet using SNTP.
+- Current firmware obtains SNTP time over Ethernet and applies a WIZnet SNTP timezone code selected at CMake configure time.
 - Before valid SNTP time is available, the display shows the fallback test pattern `12:34`.
-- After valid SNTP time is available, the display shows the current UTC time as `HHMM`, with the decimal-point indicator blinking from the seconds value.
+- After valid SNTP time is available, the display shows the current configured SNTP time as `HHMM`, with the decimal-point indicator blinking from the seconds value.
 
 ## Hardware list
 
@@ -166,13 +166,50 @@ external/WIZnet-PICO-C
 
 ### 4. Configure the project
 
-From the project root:
+From the project root, configure the project with CMake.
+
+Default build, using WIZnet SNTP timezone code `21`:
 
 ```bash
 cmake -S . -B build -G Ninja -DPICO_BOARD=pico2_w
 ```
 
 This creates the `build/` directory.
+
+The `LOCAL_TZ` CMake option controls the WIZnet SNTP timezone table code compiled into the firmware.
+
+Important: `LOCAL_TZ` is not a normal UTC hour offset. It is the numeric timezone code used by WIZnet's SNTP library.
+
+Useful values for this project:
+
+```text
+21 = UTC±00
+25 = UTC+01, includes Sweden in WIZnet's table
+26 = UTC+02, useful for Swedish summer time / CEST-style testing
+```
+
+Example UTC build:
+
+```bash
+cmake -S . -B build-utc -G Ninja -DPICO_BOARD=pico2_w -DLOCAL_TZ=21
+cmake --build build-utc
+```
+
+Example Swedish winter-time / CET-style build:
+
+```bash
+cmake -S . -B build-cet -G Ninja -DPICO_BOARD=pico2_w -DLOCAL_TZ=25
+cmake --build build-cet
+```
+
+Example Swedish summer-time / CEST-style build:
+
+```bash
+cmake -S . -B build-cest -G Ninja -DPICO_BOARD=pico2_w -DLOCAL_TZ=26
+cmake --build build-cest
+```
+
+The firmware does not currently auto-detect daylight saving time. Choose the appropriate `LOCAL_TZ` value when configuring the build.
 
 ## Code edit, compile, build and flash workflow
 
@@ -191,7 +228,11 @@ Important files:
 CMakeLists.txt
 src/main.c
 src/pico_8seg.c
+src/wiznet_ethernet.c
+src/wiznet_sntp.c
 include/pico_8seg.h
+include/wiznet_ethernet.h
+include/wiznet_sntp.h
 external/WIZnet-PICO-C/
 ```
 
@@ -200,13 +241,23 @@ Current display-driver files:
 - `include/pico_8seg.h`
 - `src/pico_8seg.c`
 
+Current Ethernet-driver files:
+
+- `include/wiznet_ethernet.h`
+- `src/wiznet_ethernet.c`
+
+Current SNTP/time files:
+
+- `include/wiznet_sntp.h`
+- `src/wiznet_sntp.c`
+
 Current application entry point:
 
 - `src/main.c`
 
 ### Build
 
-After editing code:
+After editing code, build the configured firmware:
 
 ```bash
 cmake --build build
@@ -216,6 +267,34 @@ The important output file is:
 
 ```text
 build/pico_2w_clock.uf2
+```
+
+If using a separate build directory for a specific time mode, build that directory instead.
+
+UTC example:
+
+```bash
+cmake --build build-utc
+```
+
+CET example:
+
+```bash
+cmake --build build-cet
+```
+
+CEST example:
+
+```bash
+cmake --build build-cest
+```
+
+The corresponding UF2 files will be in those build directories, for example:
+
+```text
+build-utc/pico_2w_clock.uf2
+build-cet/pico_2w_clock.uf2
+build-cest/pico_2w_clock.uf2
 ```
 
 ### Flash with picotool and view printf output
@@ -256,13 +335,22 @@ release both keys
 then press Ctrl+X
 ```
 
-The current test firmware prints output like:
+The current firmware prints output resembling:
 
 ```text
 pico_2w_clock starting
-display test: 12:34 dots=on
-display test: 12:34 dots=off
+wiznet: initializing SPI and W5100S
+wiznet: generated local MAC 02:50:43:2A:4B:CD
+wiznet: starting DHCP client
+sntp: initialized, server=162.159.200.1 timezone-code=21
+display test: 12:34 dots=on ethernet=waiting-for-dhcp sntp=waiting-for-time
+wiznet: DHCP lease acquired
+sntp: sync ok, 2026-05-11 12:34:49
+display time: 12:34:49 dots=off ethernet=up sntp=time-valid
+display time: 12:34:50 dots=on ethernet=up sntp=time-valid
 ```
+
+The exact MAC address, IP address, SNTP time, and timezone code depend on the Pico board, network, and CMake `LOCAL_TZ` setting.
 
 ### Alternative flash method: copy UF2 manually
 

@@ -2,6 +2,27 @@ cmake_minimum_required(VERSION 3.13)
 
 set(PICO_BOARD pico2_w CACHE STRING "Target board")
 
+# WIZnet SNTP timezone code.
+#
+# This is NOT a normal UTC hour offset.
+# It is the WIZnet SNTP library's timezone table code.
+#
+# Useful examples:
+#   21 = UTC±00
+#   25 = UTC+01, includes Sweden in WIZnet's table
+#   26 = UTC+02, useful for Swedish summer time / CEST-style testing
+set(LOCAL_TZ "21" CACHE STRING "WIZnet SNTP timezone table code")
+
+if(NOT LOCAL_TZ MATCHES "^[0-9]+$")
+    message(FATAL_ERROR "LOCAL_TZ must be a numeric WIZnet SNTP timezone code, for example 21 for UTC")
+endif()
+
+if(LOCAL_TZ LESS 0 OR LOCAL_TZ GREATER 49)
+    message(FATAL_ERROR "LOCAL_TZ must be between 0 and 49 according to the WIZnet SNTP timezone table")
+endif()
+
+message(STATUS "Using WIZnet SNTP timezone code LOCAL_TZ=${LOCAL_TZ}")
+
 include(pico_sdk_import.cmake)
 
 project(pico_2w_clock C CXX ASM)
@@ -66,6 +87,11 @@ add_library(wiznet_sntp
 target_include_directories(wiznet_sntp
     PUBLIC
         include
+)
+
+target_compile_definitions(wiznet_sntp
+    PRIVATE
+        WIZNET_SNTP_TIMEZONE_CODE=${LOCAL_TZ}
 )
 
 target_link_libraries(wiznet_sntp

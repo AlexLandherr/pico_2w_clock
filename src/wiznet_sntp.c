@@ -10,7 +10,11 @@
 #include "sntp.h"
 
 #define SOCKET_SNTP 1
-#define SNTP_TIMEZONE_CODE_UTC 21
+
+#ifndef WIZNET_SNTP_TIMEZONE_CODE
+#define WIZNET_SNTP_TIMEZONE_CODE 21
+#endif
+
 #define SNTP_RETRY_INTERVAL_MS 1000
 #define SNTP_REFRESH_INTERVAL_MS (60 * 60 * 1000)
 
@@ -26,6 +30,121 @@ static absolute_time_t next_sntp_attempt_time;
 
 static bool time_has_reached(absolute_time_t deadline) {
     return absolute_time_diff_us(get_absolute_time(), deadline) <= 0;
+}
+
+static int16_t wiznet_timezone_code_to_offset_minutes(uint8_t timezone_code) {
+    switch (timezone_code) {
+        case 0:
+            return -12 * 60;
+        case 1:
+            return -11 * 60;
+        case 2:
+            return -10 * 60;
+        case 3:
+            return -(9 * 60 + 30);
+        case 4:
+            return -9 * 60;
+        case 5:
+        case 6:
+            return -8 * 60;
+        case 7:
+        case 8:
+            return -7 * 60;
+        case 9:
+        case 10:
+            return -6 * 60;
+        case 11:
+        case 12:
+        case 13:
+            return -5 * 60;
+        case 14:
+            return -(4 * 60 + 30);
+        case 15:
+        case 16:
+            return -4 * 60;
+        case 17:
+            return -(3 * 60 + 30);
+        case 18:
+            return -3 * 60;
+        case 19:
+            return -2 * 60;
+        case 20:
+            return -1 * 60;
+        case 21:
+        case 22:
+            return 0;
+        case 23:
+        case 24:
+        case 25:
+            return 1 * 60;
+        case 26:
+        case 27:
+            return 2 * 60;
+        case 28:
+        case 29:
+            return 3 * 60;
+        case 30:
+            return 3 * 60 + 30;
+        case 31:
+            return 4 * 60;
+        case 32:
+            return 4 * 60 + 30;
+        case 33:
+            return 5 * 60;
+        case 34:
+            return 5 * 60 + 30;
+        case 35:
+            return 5 * 60 + 45;
+        case 36:
+            return 6 * 60;
+        case 37:
+            return 6 * 60 + 30;
+        case 38:
+            return 7 * 60;
+        case 39:
+            return 8 * 60;
+        case 40:
+            return 9 * 60;
+        case 41:
+            return 9 * 60 + 30;
+        case 42:
+            return 10 * 60;
+        case 43:
+            return 10 * 60 + 30;
+        case 44:
+            return 11 * 60;
+        case 45:
+            return 11 * 60 + 30;
+        case 46:
+            return 12 * 60;
+        case 47:
+            return 12 * 60 + 45;
+        case 48:
+            return 13 * 60;
+        case 49:
+            return 14 * 60;
+        default:
+            return 0;
+    }
+}
+
+static void format_timezone_offset(char *buffer, size_t buffer_size, uint8_t timezone_code) {
+    int16_t offset_minutes = wiznet_timezone_code_to_offset_minutes(timezone_code);
+    char sign = '+';
+
+    if (offset_minutes < 0) {
+        sign = '-';
+        offset_minutes = (int16_t)-offset_minutes;
+    }
+
+    uint8_t hours = (uint8_t)(offset_minutes / 60);
+    uint8_t minutes = (uint8_t)(offset_minutes % 60);
+
+    if (hours == 0 && minutes == 0) {
+        snprintf(buffer, buffer_size, "+00:00 (UTC)");
+    } else {
+        snprintf(buffer, buffer_size, "%c%02u:%02u", sign, hours, minutes);
+    }
 }
 
 static void convert_cached_time_to_hhmmss(wiznet_sntp_time_t *time_out) {
@@ -50,22 +169,18 @@ static void convert_cached_time_to_hhmmss(wiznet_sntp_time_t *time_out) {
 }
 
 void wiznet_sntp_init(void) {
-    /*
-     * For this first smoke test we use UTC and convert/display local time later.
-     * Cloudflare documents 162.159.200.1 as one of its public NTP service addresses.
-     */
-    SNTP_init(SOCKET_SNTP, sntp_server_ip, SNTP_TIMEZONE_CODE_UTC, sntp_buf);
+    SNTP_init(SOCKET_SNTP, sntp_server_ip, WIZNET_SNTP_TIMEZONE_CODE, sntp_buf);
 
     initialized = true;
     has_time = false;
     next_sntp_attempt_time = get_absolute_time();
 
-    printf("sntp: initialized, server=%u.%u.%u.%u timezone=UTC code=%u\n",
-       sntp_server_ip[0],
-       sntp_server_ip[1],
-       sntp_server_ip[2],
-       sntp_server_ip[3],
-       SNTP_TIMEZONE_CODE_UTC);
+    printf("sntp: initialized, server=%u.%u.%u.%u timezone-code=%u\n",
+           sntp_server_ip[0],
+           sntp_server_ip[1],
+           sntp_server_ip[2],
+           sntp_server_ip[3],
+           WIZNET_SNTP_TIMEZONE_CODE);
 }
 
 bool wiznet_sntp_get_time(wiznet_sntp_time_t *time_out) {
@@ -84,13 +199,21 @@ bool wiznet_sntp_get_time(wiznet_sntp_time_t *time_out) {
 
             next_sntp_attempt_time = delayed_by_ms(last_sync_time, SNTP_REFRESH_INTERVAL_MS);
 
-            printf("sntp: sync ok, %04u-%02u-%02u %02u:%02u:%02u UTC\n",
-                   new_time.yy,
-                   new_time.mo,
-                   new_time.dd,
-                   new_time.hh,
-                   new_time.mm,
-                   new_time.ss);
+            char timezone_offset_text[16];
+
+            format_timezone_offset(timezone_offset_text,
+                                sizeof(timezone_offset_text),
+                                WIZNET_SNTP_TIMEZONE_CODE);
+
+            printf("sntp: sync ok, %04u-%02u-%02u %02u:%02u:%02u%s\n",
+                new_time.yy,
+                new_time.mo,
+                new_time.dd,
+                new_time.hh,
+                new_time.mm,
+                new_time.ss,
+                timezone_offset_text
+            );
         } else {
             next_sntp_attempt_time = delayed_by_ms(get_absolute_time(), SNTP_RETRY_INTERVAL_MS);
 
